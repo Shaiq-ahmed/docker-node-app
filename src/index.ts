@@ -21,7 +21,7 @@ mongoose
     .connect(MONGO_URI)
     .then(() => console.log('Connected to MongoDB'))
     .catch((err: Error) => {
-        console.error('MongoDB Connection Error:', err);
+        console.error('MongoDB Connection Error: ', err);
         process.exit(1); 
     });
 
