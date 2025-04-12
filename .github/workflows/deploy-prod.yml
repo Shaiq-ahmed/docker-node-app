@@ -1,0 +1,34 @@
+# .github/workflows/deploy-prod.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: SSH and deploy to prod server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+            docker stop my-app-prod || true
+            docker rm my-app-prod || true
+            docker run -d \
+              --name my-app-prod \
+              -p 9191:9191 \
+              --env-file /path/to/prod.env \
+              ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+
+      - name: Notify Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+            -X POST \
+            -d "{\"content\": \"🚀 **Production Deployed** for commit: ${{ github.sha }} by ${{ github.actor }}\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}

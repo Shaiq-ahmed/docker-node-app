@@ -1,0 +1,76 @@
+name: Deploy to Dev
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Tests
+        env:
+          MONGO_URI: mongodb://localhost:27017/testdb
+        run: npm run test
+      
+      - name: Deploy to dev server
+        run: echo "🚀 Deploying to dev server..."
+
+      - name: Notify Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"✅ **Dev Deployment Succeeded** for commit: ${{ github.sha }} by ${{ github.actor }}\"}" \
+               ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+    # steps:
+    #   - name: SSH and deploy to dev server
+    #     uses: appleboy/ssh-action@v1.0.3
+    #     with:
+    #       host: ${{ secrets.DEV_SERVER_HOST }}
+    #       username: ${{ secrets.DEV_SERVER_USER }}
+    #       key: ${{ secrets.DEV_SERVER_SSH_KEY }}
+    #       script: |
+    #         docker pull ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+    #         docker stop my-app-dev || true
+    #         docker rm my-app-dev || true
+    #         docker run -d \
+    #           --name my-app-dev \
+    #           -p 9191:9191 \
+    #           ${{ secrets.DOCKER_USERNAME }}/my-node-app:latest
+

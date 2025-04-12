@@ -1,0 +1,14 @@
+name: Cleanup Docker Artifacts
+
+on:
+  schedule:
+    - cron: '0 3 * * 0' # every Sunday at 3 AM
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cleanup local Docker cache
+        run: |
+          docker system prune -af
